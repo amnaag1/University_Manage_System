@@ -3,45 +3,60 @@ from django.db import models
 # Create your models here.
 
 class Department(models.Model):
-    username = models.CharField(max_length=255)
+    name = models.CharField(max_length=255)
+    code = models.CharField(max_length=10, unique=True)
+    description = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return self.name
     
 class Teacher(models.Model):
-    username = models.CharField(max_length=255)
-    email = models.EmailField(max_length=50)
+    username = models.CharField(max_length=255, unique=True)
+    email = models.EmailField(max_length=50, unique=True)
     password = models.CharField(max_length=50)
-    department = models.CharField(max_length=255)
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, null=True, blank=True)
+    phone = models.CharField(max_length=15, blank=True, null=True)
 
     def __str__(self):
-        return self.name
+        return f"{self.first_name} {self.last_name}"
     
 class Student(models.Model):
-    username = models.CharField(max_length=255)
-    email = models.EmailField(max_length=50)
+    username = models.CharField(max_length=255, unique=True)
+    email = models.EmailField(max_length=50, unique=True)
     password = models.CharField(max_length=50)
-    department = models.CharField(max_length=255)
-    courses = models.CharField(max_length=255)
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, null=True, blank=True)
+    student_id = models.CharField(max_length=20, unique=True)
+    phone = models.CharField(max_length=15, blank=True, null=True)
 
     def __str__(self):
-        return self.name
+        return f"{self.first_name} {self.last_name}"
     
 class Course(models.Model):
-    username = models.CharField(max_length=255)
-    email = models.EmailField(max_length=50)
-    password = models.CharField(max_length=50)
-    department = models.CharField(max_length=255)
+    name = models.CharField(max_length=255)
+    code = models.CharField(max_length=20, unique=True)
+    description = models.TextField(blank=True, null=True)
+    department = models.ForeignKey(Department, on_delete=models.CASCADE, null=True, blank=True)
+    credits = models.IntegerField(default=3)
+    teacher = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return self.name
     
 class Marks(models.Model):
-    username = models.CharField(max_length=255)
-    courses = models.CharField(max_length=255)
-    marks = models.IntegerField()
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    marks = models.DecimalField(max_digits=5, decimal_places=2)
+    semester = models.CharField(max_length=20)
+    year = models.IntegerField()
 
     def __str__(self):
-        return self.name
+        return f"{self.student.username} - {self.course.name}: {self.marks}"
+    
+    class Meta:
+        unique_together = ['student', 'course', 'semester', 'year']
     
 
