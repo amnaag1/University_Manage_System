@@ -1,0 +1,60 @@
+{% extends 'users/base.html' %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<section class="vh-100">
+  <div class="container-fluid h-custom">
+    <div class="row d-flex justify-content-center align-items-center h-100">
+      <div class="col-md-9 col-lg-6 col-xl-5">
+        <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-login-form/draw2.webp"
+          class="img-fluid" alt="Sample image">
+      </div>
+      <div class="col-md-8 col-lg-6 col-xl-4 offset-xl-1">
+        
+        <!-- ✅ Django form connection -->
+        <form method="POST" action="{% url 'login' %}">
+          {% csrf_token %}
+          
+          <h3 class="text-center mb-4">Login</h3>
+
+          <!-- Username input -->
+          <div class="form-outline mb-4">
+            <input type="text" name="username" class="form-control form-control-lg"
+              placeholder="Enter your username" required>
+            <label class="form-label">Username</label>
+          </div>
+
+          <!-- Password input -->
+          <div class="form-outline mb-3">
+            <input type="password" name="password" class="form-control form-control-lg"
+              placeholder="Enter password" required>
+            <label class="form-label">Password</label>
+          </div>
+
+          <!-- Error Message -->
+          {% if error %}
+            <p class="text-danger">{{ error }}</p>
+          {% endif %}
+
+          <div class="text-center mt-4">
+            <button type="submit" class="btn btn-primary btn-lg w-100">
+              Login
+            </button>
+          </div>
+
+           <div class="form-check mb-0">
+              <input class="form-check-input me-2" type="checkbox" value="" id="form2Example3" />
+              <label class="form-check-label" for="form2Example3">
+                Remember me
+              </label>
+            </div>
+            <a href="#!" class="text-body">Forgot password?</a>
+          </div>
+          
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

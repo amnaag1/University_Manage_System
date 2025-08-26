@@ -58,5 +58,31 @@ class Marks(models.Model):
     
     class Meta:
         unique_together = ['student', 'course', 'semester', 'year']
+
+class Materials(models.Model):
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    file = models.FileField(upload_to='materials/')
+    course = models.ForeignKey('Course', on_delete=models.CASCADE)
+    uploaded_by = models.ForeignKey('Teacher', on_delete=models.SET_NULL, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
+
+class Grades(models.Model):
+    student = models.ForeignKey('Student', on_delete=models.CASCADE)
+    course = models.ForeignKey('Course', on_delete=models.CASCADE)
+    grade = models.CharField(max_length=5)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('student', 'course')
+
+    def __str__(self):
+        return f"{self.student} - {self.course}: {self.grade}"
+    
+
+
     
 

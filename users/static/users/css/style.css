@@ -1,0 +1,10 @@
+.custom-navbar {
+    background-color: #0d6efd !important;  /* deep blue */
+}
+
+.custom-footer {
+    background-color: #0d6efd;  
+    position: fixed;           
+    bottom: 0;
+    width: 100%;
+}
