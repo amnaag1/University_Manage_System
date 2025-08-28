@@ -3,6 +3,7 @@ from django.contrib.auth import authenticate, login, logout
 from .models import Student, Teacher, Course, Materials, Grades
 from django.contrib.auth.decorators import login_required
 from .decorators import teacher_required, student_required
+from .models import Profile
 from .forms import StudentForm, TeacherForm, CourseForm, MaterialForm, GradeForm
 
 def home(request):
@@ -13,9 +14,15 @@ def user_login(request):
         username = request.POST['username']
         password = request.POST['password']
         user = authenticate(request, username=username, password=password)
-        if user:
+        if user is not None:
             login(request, user)
-            return redirect('dashboard')
+            # Rolewise redirect
+            if user.profile.role == 'student':
+                return redirect('student_dashboard')
+            elif user.profile.role == 'teacher':
+                return redirect('teacher_dashboard')
+            elif user.profile.role == 'admin':
+                return redirect('admin_dashboard')
         else:
             return render(request, 'users/login.html', {'error': 'Invalid credentials'})
     return render(request, 'users/login.html')
@@ -23,6 +30,7 @@ def user_login(request):
 def user_logout(request):
     logout(request)
     return redirect('login')
+
 
 def student_list(request):
     students = Student.objects.all()   # fetch all students from DB
@@ -111,7 +119,7 @@ def teacher_delete(request, pk):
 def teacher_detail(request, pk):
     teacher = get_object_or_404(Teacher, pk=pk)
     return render(request, 'users/teacher_detail.html', {'teacher': teacher})
-
+# Teacher Upload
 @login_required
 @teacher_required
 def add_grade(request):
@@ -137,6 +145,12 @@ def upload_material(request):
     else:
         form = MaterialForm()
     return render(request, 'users/upload_material.html', {'form': form})
+
+# Student View
+@login_required
+def student_materials(request):
+    materials = Materials.objects.all().order_by('-uploaded_at')
+    return render(request, 'users/student_materials.html', {'materials': materials})
 
 
 
@@ -176,3 +190,15 @@ def course_delete(request, pk):
 def course_detail(request, pk):
     course = get_object_or_404(Course, pk=pk)
     return render(request, 'users/course_detail.html', {'course': course})
+# Dashboards
+@login_required
+def student_dashboard(request):
+    return render(request, 'users/student_dashboard.html')
+
+@login_required
+def teacher_dashboard(request):
+    return render(request, 'users/teacher_dashboard.html')
+
+@login_required
+def admin_dashboard(request):
+    return render(request, 'users/admin_dashboard.html')

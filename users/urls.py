@@ -10,6 +10,7 @@ urlpatterns = [
     path('students/<int:pk>/', views.student_detail, name='student_detail'),
     path('students/grades/', views.view_grades, name='view_grades'),
     path('students/materials/', views.view_materials, name='view_materials'),
+    path('student-materials/', views.student_materials, name='student_materials'),
 
     path('teachers/', views.teacher_list, name='teacher_list'),  # Teachers list
     path('teachers/create/', views.teacher_create, name='teacher_create'),
@@ -19,6 +20,7 @@ urlpatterns = [
     path('teachers/add-grade/', views.add_grade, name='add_grade'),
     path('teachers/upload-material/', views.upload_material, name='upload_material'),
     
+    
     path('courses/', views.course_list, name='course_list'), # Courses list
     path('courses/create/', views.course_create, name='course_create'),
     path('courses/<int:pk>/update/', views.course_update, name='course_update'),
@@ -27,5 +29,8 @@ urlpatterns = [
 
     path('login/', views.user_login, name='login'),
     path('logout/', views.user_logout, name='logout'),
+    path('student/dashboard/', views.student_dashboard, name='student_dashboard'),
+    path('teacher/dashboard/', views.teacher_dashboard, name='teacher_dashboard'),
+    path('admin/dashboard/', views.admin_dashboard, name='admin_dashboard'),
 ]
 

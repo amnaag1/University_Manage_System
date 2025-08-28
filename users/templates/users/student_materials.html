@@ -1,0 +1,18 @@
+{% extends "users/base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Available Materials</h2>
+    <ul class="list-group">
+        {% for material in materials %}
+            <li class="list-group-item">
+                <strong>{{ material.title }}</strong> <br>
+                <small>{{ material.description }}</small><br>
+                Uploaded by: {{ material.uploaded_by.username }} on {{ material.uploaded_at|date:"M d, Y" }} <br>
+                <a href="{{ material.file.url }}" class="btn btn-success btn-sm mt-2" download>Download</a>
+            </li>
+        {% empty %}
+            <li class="list-group-item">No materials available yet.</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}
