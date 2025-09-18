@@ -1,0 +1,38 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+{% block content %}
+    <div class="container-fluid mt-4">
+        <h2 class="mb-4">Manage Grades for {{ course.course_name }}</h2>
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-success" role="alert">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            {{ formset.management_form }}
+            <table class="table table-bordered table-hover">
+                <thead class="bg-primary text-white">
+                    <tr>
+                        <th>Student Name</th>
+                        <th>Course</th>
+                        <th>Marks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for form, grade in forms_and_grades %}
+                    <tr>
+                        <td>{{ grade.student.user.username }}</td>
+                        <td>{{ grade.course.course_name }}</td>
+                        <td>{{ form.score }}</td>
+                        {{ form.id }}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <button type="submit" class="btn btn-success mt-3">Save Grades</button>
+        </form>
+    </div>
+{% endblock %}

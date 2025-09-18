@@ -1,0 +1,32 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% block content %}
+<div class="container-fluid mt-4">
+    <h2>Manage Teachers</h2>
+    <hr>
+    <a href="{% url 'add_teacher_admin' %}" class="btn btn-success mb-3">Add New Teacher</a>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Teacher Name</th>
+                <th>Email</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for teacher in teachers %}
+            <tr>
+                <td>{{ teacher.user.username }}</td>
+                <td>{{ teacher.user.email }}</td>
+                <td>
+                    <a href="#" class="btn btn-sm btn-info">View Details</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3">No teachers found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

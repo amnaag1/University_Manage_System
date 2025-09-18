@@ -1,0 +1,38 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block content %}
+    <div class="container-fluid mt-4">
+        <h2 class="mb-4">My Grades</h2>
+        {% if grades %}
+            <table class="table table-bordered table-hover">
+                <thead class="bg-primary text-white">
+                    <tr>
+                        <th>Course Code</th>
+                        <th>Course Name</th>
+                        <th>Grades</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for grade in grades %}
+                    <tr>
+                        <td>{{ grade.course.course_code }}</td>
+                        <td>{{ grade.course.course_name }}</td>
+                        <td>
+                            {% if grade.score %}
+                                {{ grade.score }}
+                            {% else %}
+                                <span class="text-muted">Not graded yet</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="alert alert-info" role="alert">
+                You have no grades to display yet.
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

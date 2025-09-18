@@ -1,0 +1,25 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% block content %}
+<div class="container-fluid mt-4">
+    <h2>Teacher Details</h2>
+    <hr>
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">{{ teacher.user.username }}</h5>
+            <p class="card-text"><strong>Email:</strong> {{ teacher.user.email }}</p>
+            <p class="card-text"><strong>Teacher ID:</strong> {{ teacher.teacher_id }}</p>
+        </div>
+    </div>
+
+    <h3 class="mt-4">Courses Taught</h3>
+    <ul class="list-group">
+        {% for course in taught_courses %}
+        <li class="list-group-item">{{ course.course_name }}</li>
+        {% empty %}
+        <li class="list-group-item">No courses assigned.</li>
+        {% endfor %}
+    </ul>
+
+    <a href="{% url 'manage_teachers' %}" class="btn btn-secondary mt-4">Back to Teachers</a>
+</div>
+{% endblock %}

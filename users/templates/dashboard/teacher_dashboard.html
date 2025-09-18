@@ -1,0 +1,55 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+{% load users_extras %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <h2 class="mb-4">Teacher Dashboard</h2>
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm h-100 border-success">
+                <div class="card-body">
+                    <h5 class="card-title text-success">My Courses</h5>
+                    <p class="card-text display-4">{{ courses.count }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm h-100 border-info">
+                <div class="card-body">
+                    <h5 class="card-title text-info">Total Students</h5>
+                    <p class="card-text display-4">{{ total_students }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h3 class="mt-4 mb-3">Courses I Teach</h3>
+    <div class="row">
+        {% for course in courses %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title text-primary">{{ course.course_name }}</h5>
+                    <p class="card-text text-muted">Course Code: {{ course.course_code }}</p>
+                    <hr>
+                    <p class="card-text">
+                        Enrolled Students: **{{ course.enrollment_set.count }}**
+                    </p>
+                    <div class="d-flex justify-content-between mt-3">
+                        <a href="{% url 'manage_grades' course.id %}" class="btn btn-outline-primary btn-sm">Manage Grades</a>
+                        <a href="{% url 'manage_attendance' course.id %}" class="btn btn-outline-info btn-sm">Manage Attendance</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <p class="text-muted">You are not currently assigned to any courses.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

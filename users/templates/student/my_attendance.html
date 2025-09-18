@@ -1,0 +1,40 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block content %}
+    <div class="container-fluid mt-4">
+        <h2 class="mb-4">My Attendance</h2>
+        {% if attendance_records %}
+            <table class="table table-bordered table-hover">
+                <thead class="bg-info text-white">
+                    <tr>
+                        <th>Course Code</th>
+                        <th>Course Name</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in attendance_records %}
+                    <tr>
+                        <td>{{ record.course.course_code }}</td>
+                        <td>{{ record.course.course_name }}</td>
+                        <td>
+                            {% if record.status == 'P' %}
+                                <span class="text-success">Present</span>
+                            {% else %}
+                                <span class="text-danger">Absent</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ record.date }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="alert alert-info" role="alert">
+                You have no attendance records to display.
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

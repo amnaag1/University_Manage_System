@@ -1,0 +1,13 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% block content %}
+<div class="container-fluid mt-4">
+    <h2>Add New Enrollment</h2>
+    <hr>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-primary mt-3">Add Enrollment</button>
+        <a href="{% url 'manage_enrollment_admin' %}" class="btn btn-secondary mt-3">Cancel</a>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% block content %}
+<div class="container-fluid mt-4">
+    <h2>Student Details</h2>
+    <hr>
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">{{ student.user.username }}</h5>
+            <p class="card-text"><strong>Email:</strong> {{ student.user.email }}</p>
+            <p class="card-text"><strong>Student ID:</strong> {{ student.student_id }}</p>
+            <p class="card-text"><strong>Department:</strong> {{ student.department.name }}</p>
+        </div>
+    </div>
+
+    <h3 class="mt-4">Enrolled Courses</h3>
+    <ul class="list-group">
+        {% for enrollment in enrolled_courses %}
+        <li class="list-group-item">{{ enrollment.course.course_name }}</li>
+        {% empty %}
+        <li class="list-group-item">No courses enrolled.</li>
+        {% endfor %}
+    </ul>
+
+    <a href="{% url 'manage_students' %}" class="btn btn-secondary mt-4">Back to Students</a>
+</div>
+{% endblock %}

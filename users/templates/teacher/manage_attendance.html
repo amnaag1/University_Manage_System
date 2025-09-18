@@ -1,0 +1,45 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+{% block content %}
+    <div class="container-fluid mt-4">
+        <h2 class="mb-4">Manage Attendance for {{ course.course_name }}</h2>
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-success" role="alert">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <table class="table table-bordered table-hover">
+                <thead class="bg-primary text-white">
+                    <tr>
+                        <th>Student Name</th>
+                        <th>Course</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in attendance_data %}
+                    <tr>
+                        <td>{{ record.student_name }}</td>
+                        <td>{{ record.course_name }}</td>
+                        <td>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="status_{{ record.record_id }}" id="present_{{ record.record_id }}" value="P" {% if record.status == 'P' %}checked{% endif %}>
+                                <label class="form-check-label" for="present_{{ record.record_id }}">Present</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="status_{{ record.record_id }}" id="absent_{{ record.record_id }}" value="A" {% if record.status == 'A' %}checked{% endif %}>
+                                <label class="form-check-label" for="absent_{{ record.record_id }}">Absent</label>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <button type="submit" class="btn btn-success mt-3">Save Attendance</button>
+        </form>
+    </div>
+{% endblock %}

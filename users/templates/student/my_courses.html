@@ -1,0 +1,21 @@
+{% extends 'dashboard/base_dashboard.html' %}
+{% load static %}
+
+{% block content %}
+    <div class="container-fluid mt-4">
+        <h2 class="mb-4">My Courses</h2>
+        {% if enrollments %}
+            <ul class="list-group">
+                {% for enrollment in enrollments %}
+                    <li class="list-group-item">
+                        <strong>{{ enrollment.course.course_name }}</strong> ({{ enrollment.course.course_code }})
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <div class="alert alert-info" role="alert">
+                You are not currently enrolled in any courses.
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}
