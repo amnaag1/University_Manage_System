@@ -1,0 +1,28 @@
+{% extends 'dashboard/base_dashboard.html' %}   
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Assign Teacher to Course: {{ course.course_name }}</h2>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-group mb-3">
+                    <label for="teacher-select" class="form-label">Assign Teacher</label>
+                    <select class="form-control" id="teacher-select" name="teacher">
+                        <option value="">Select a Teacher</option>
+                        {% for teacher in all_teachers %}
+                            <option value="{{ teacher.pk }}" {% if course.teacher == teacher %}selected{% endif %}>
+                                {{ teacher.user.username }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-success">Save Changes</button>
+                <a href="{% url 'manage_courses_admin' %}" class="btn btn-outline-secondary">Back to Courses</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

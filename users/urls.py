@@ -52,6 +52,7 @@ urlpatterns = [
     path('admin/enrollment/<int:pk>/delete/', views.delete_enrollment, name='delete_enrollment'),
     path('admin/manage-courses/', views.manage_courses_admin, name='manage_courses_admin'),
     path('admin/manage-courses/<int:course_id>/', views.course_detail_admin, name='course_detail_admin'),
+    
 
     # Teacher-dashboard urls
     path('teacher-dashboard/', views.teacher_dashboard, name='teacher_dashboard'),

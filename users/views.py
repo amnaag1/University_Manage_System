@@ -342,9 +342,12 @@ def add_enrollment_admin(request):
 @login_required
 def view_student_details(request, id):
     try:
-        student = Student.objects.get(id=id)
+        # Change 'id' to 'pk' for the primary key lookup
+        student = Student.objects.get(pk=id)
+        
         # Fetch courses the student is enrolled in
         enrolled_courses = Enrollment.objects.filter(student=student)
+        
         context = {
             'student': student,
             'enrolled_courses': enrolled_courses
@@ -381,9 +384,12 @@ def add_student_admin(request):
 @login_required
 def view_teacher_details(request, id):
     try:
-        teacher = Teacher.objects.get(id=id)
+        # Change 'id' to 'pk' for the primary key lookup
+        teacher = Teacher.objects.get(pk=id)
+        
         # Fetch courses the teacher is assigned to
         taught_courses = Course.objects.filter(teacher=teacher)
+        
         context = {
             'teacher': teacher,
             'taught_courses': taught_courses
@@ -456,6 +462,7 @@ def course_detail_admin(request, course_id):
     all_teachers = Teacher.objects.all().select_related('user')
 
     if request.method == 'POST':
+        # --- Logic for assigning a new teacher ---
         new_teacher_id = request.POST.get('teacher_id')
         if new_teacher_id:
             try:
@@ -470,22 +477,33 @@ def course_detail_admin(request, course_id):
             course.save()
             messages.info(request, f'Teacher for {course.course_name} has been unassigned.')
             
-        # for the Student ID 
-        student_ids_to_enroll = request.POST.getlist('enroll_student')
+        # --- NEW AND IMPROVED LOGIC FOR STUDENT ENROLLMENT ---
+        selected_student_ids = set(request.POST.getlist('enroll_student'))
         
-        # Check if the list of student IDs is not empty
-        if student_ids_to_enroll:
-            Enrollment.objects.filter(course=course).delete()
-            for student_id in student_ids_to_enroll:
-                # Add a check to ensure the ID is not an empty string
-                if student_id:
-                    student = get_object_or_404(Student, pk=student_id)
-                    Enrollment.objects.create(student=student, course=course)
+        # Get the IDs of students currently enrolled in this course
+        current_enrollments = Enrollment.objects.filter(course=course)
+        current_student_ids = {str(e.student.pk) for e in current_enrollments}
+        
+        # Find students to add (in selected but not in current enrollments)
+        students_to_add = selected_student_ids - current_student_ids
+        
+        # Find students to remove (in current but not in selected enrollments)
+        students_to_remove = current_student_ids - selected_student_ids
+        
+        # Perform deletions and creations
+        if students_to_remove:
+            Enrollment.objects.filter(course=course, student__pk__in=list(students_to_remove)).delete()
+        
+        for student_id in students_to_add:
+            if student_id:
+                student = get_object_or_404(Student, pk=student_id)
+                Enrollment.objects.create(student=student, course=course)
+        
+        # Check if any changes were made and provide appropriate feedback
+        if students_to_add or students_to_remove:
             messages.success(request, f'Student enrollments for {course.course_name} updated successfully.')
         else:
-            # If no students are selected, delete all enrollments for this course
-            Enrollment.objects.filter(course=course).delete()
-            messages.info(request, f'All student enrollments for {course.course_name} have been removed.')
+            messages.info(request, f'No changes were made to student enrollments for {course.course_name}.')
 
         return redirect('course_detail_admin', course_id=course.id)
 
@@ -496,6 +514,28 @@ def course_detail_admin(request, course_id):
         'all_teachers': all_teachers,
     }
     return render(request, 'admin/course_detail_admin.html', context)
+
+@login_required
+def course_assignment_admin(request, course_id):
+    course = get_object_or_404(Course, pk=course_id)
+    all_teachers = Teacher.objects.all()
+
+    if request.method == 'POST':
+        teacher_id = request.POST.get('teacher')
+        if teacher_id:
+            teacher = get_object_or_404(Teacher, pk=teacher_id)
+            course.teacher = teacher
+            course.save()
+            messages.success(request, f"Teacher '{teacher.user.username}' assigned to course '{course.course_name}' successfully!")
+            return redirect('manage_courses_admin')
+        else:
+            messages.error(request, "Please select a teacher.")
+    
+    context = {
+        'course': course,
+        'all_teachers': all_teachers
+    }
+    return render(request, 'admin/course_assignment.html', context)
 
 
 
@@ -576,57 +616,65 @@ def manage_grades(request, course_id):
 
 @login_required
 def manage_attendance(request, course_id):
+    # Check if the user is a teacher. If not, redirect them.
     if request.user.role != 'Teacher':
+        messages.error(request, "You do not have permission to view this page.")
         return redirect('dashboard')
     
+    # Get the teacher object for the logged-in user.
     teacher = get_object_or_404(Teacher, user=request.user)
+
+    # Filter to ensure the course belongs to the logged-in teacher.
+    # If it doesn't, this will raise a 404 error, which is good for security.
     course = get_object_or_404(Course, id=course_id, teacher=teacher)
     
-    # Get all enrollments for this specific course
-    enrollments = Enrollment.objects.filter(course=course).select_related('student')
-    
-    # Check if a date is provided, otherwise use today's date
+    # Get the attendance date from the request or use today's date as default.
     date_str = request.GET.get('date', datetime.date.today().strftime('%Y-%m-%d'))
     attendance_date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
-    
-    # Create or update attendance records for each student
-    for enrollment in enrollments:
-        Attendance.objects.get_or_create(
-            student=enrollment.student, 
-            course=course,
-            teacher=teacher,
-            date=attendance_date,
-            defaults={'status': 'A'} # Default to Absent if not marked
-        )
-    
-    # Fetch all attendance records for the course on the selected date
-    attendance_records = Attendance.objects.filter(course=course, date=attendance_date).select_related('student__user')
-    
-    # Create a list to hold the combined data
-    attendance_data = []
-    for record in attendance_records:
-        attendance_data.append({
-            'student_name': record.student.user.username,
-            'course_name': record.course.course_name,
-            'status': record.status,
-            'record_id': record.id, # ID requeired for attendance
-        })
 
-    context = {
-        'course': course,
-        'attendance_data': attendance_data,
-        'attendance_date': attendance_date,
-    }
+    # --- THIS IS THE KEY CHANGE ---
+    # We will handle both GET and POST logic together here for simplicity and to avoid fetching data twice.
 
+    # If the request is a POST, process the form submission first.
     if request.method == 'POST':
-        for record in attendance_records:
+        # Fetch the records specifically for the course and date
+        attendance_records_to_update = Attendance.objects.filter(course=course, date=attendance_date)
+        
+        for record in attendance_records_to_update:
             # Get the status from the form data
             status = request.POST.get(f"status_{record.id}")
             if status:
                 record.status = status
                 record.save()
         messages.success(request, "Attendance updated successfully!")
+        
+        # Redirect back to the same page with the selected date
         return redirect('manage_attendance', course_id=course.id)
+
+    # --- End of POST logic ---
+
+    # Get all enrollments for this specific course.
+    enrollments = Enrollment.objects.filter(course=course).select_related('student')
+    
+    # Get or create attendance records for each enrolled student for the selected date.
+    for enrollment in enrollments:
+        Attendance.objects.get_or_create(
+            student=enrollment.student, 
+            course=course,
+            teacher=teacher,
+            date=attendance_date,
+            defaults={'status': 'A'}  # Default to Absent if not marked
+        )
+    
+    # Fetch all attendance records for the course on the selected date to render in the template.
+    attendance_records = Attendance.objects.filter(course=course, date=attendance_date).select_related('student__user')
+    
+    # Create the context to pass data to the template.
+    context = {
+        'course': course,
+        'attendance_records': attendance_records,
+        'attendance_date': attendance_date,
+    }
 
     return render(request, 'teacher/manage_attendance.html', context)
 
@@ -642,12 +690,17 @@ def student_dashboard(request):
     
     student = get_object_or_404(Student, user=request.user)
 
-    # Fetch courses, grades, and attendance
-    enrollments = Enrollment.objects.filter(student=student).select_related('course')
-    grades = Grade.objects.filter(student=student).select_related('course')
-    attendance_records = Attendance.objects.filter(student=student).select_related('course')
+    # Fetch all enrollments for the student.
+    enrollments = Enrollment.objects.filter(student=student).select_related('course', 'course__teacher')
 
-    # Calculate attendance percentage for each course
+    # Get a list of the primary keys (IDs) of all enrolled courses.
+    enrolled_course_ids = [enrollment.course.id for enrollment in enrollments]
+
+    # Use this list to filter grades and attendance records.
+    grades = Grade.objects.filter(student=student, course__id__in=enrolled_course_ids).select_related('course')
+    attendance_records = Attendance.objects.filter(student=student, course__id__in=enrolled_course_ids).select_related('course')
+
+    # Calculate attendance percentage for each enrolled course
     attendance_summary = {}
     course_attendance_counts = defaultdict(lambda: {'total': 0, 'present': 0})
 
@@ -702,12 +755,16 @@ def my_courses(request):
 @login_required
 def my_grades(request):
     if request.user.role != 'Student':
+        # This part is already correct, redirecting unauthorized users.
         return redirect('dashboard')
 
     student = get_object_or_404(Student, user=request.user)
     
-    # Get all grades for this specific student, pre-fetching the related course
-    grades = Grade.objects.filter(student=student).select_related('course')
+    # Get a list of all courses the student is enrolled in.
+    enrolled_courses = Enrollment.objects.filter(student=student).values_list('course', flat=True)
+
+    # Filter grades to show only those for the courses in the enrolled_courses list.
+    grades = Grade.objects.filter(student=student, course__in=enrolled_courses).select_related('course')
     
     context = {
         'grades': grades,
@@ -719,11 +776,14 @@ def my_grades(request):
 def my_attendance(request):
     if request.user.role != 'Student':
         return redirect('dashboard')
-    
+
     student = get_object_or_404(Student, user=request.user)
-    
-    # Get attendance records for the student
-    attendance_records = Attendance.objects.filter(student=student).select_related('course')
+
+    # Get a list of all courses the student is enrolled in.
+    enrolled_courses = Enrollment.objects.filter(student=student).values_list('course', flat=True)
+
+    # Filter attendance records to show only those for the enrolled courses.
+    attendance_records = Attendance.objects.filter(student=student, course__in=enrolled_courses).select_related('course')
     
     context = {
         'attendance_records': attendance_records,

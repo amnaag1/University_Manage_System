@@ -18,7 +18,7 @@
                 <td>{{ student.user.username }}</td>
                 <td>{{ student.user.email }}</td>
                 <td>
-                    <a href="#" class="btn btn-sm btn-info">View Details</a>
+                    <a href="{% url 'view_student_details' id=student.pk %}" class="btn btn-sm btn-info">View Details</a>
                 </td>
             </tr>
             {% empty %}
