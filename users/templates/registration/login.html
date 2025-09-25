@@ -29,44 +29,51 @@
         }
         .login-card h2 {
             text-align: center;
-            margin-bottom: 1.5rem;
+            margin-bottom: 0.5rem; /* Heading ke baad space kam kiya */
             color: #343a40;
         }
-        .form-control {
-            border-radius: 5px;
-        }
-        .btn-custom {
-            background-color: #007bff;
-            border-color: #007bff;
-            color: white;
-            font-weight: bold;
-            transition: background-color 0.3s ease;
-        }
-        .btn-custom:hover {
-            background-color: #0056b3;
-            border-color: #004085;
-        }
-        .form-group {
+        .login-card p {
+            text-align: center;
+            color: #6c757d;
             margin-bottom: 1.5rem;
+        }
+        /* Custom styles for alignment */
+        .form-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .form-label {
+            flex-basis: 100px; /* Labels ko fixed width diya */
+            margin-right: 15px;
+            text-align: right;
+            padding-right: 10px;
+        }
+        .form-input {
+            flex-grow: 1; /* Input ko baaki space lene diya */
         }
     </style>
 </head>
 <body>
     <div class="login-card">
-        <h2>Login</h2>
-        <form method="POST">
+        <h2 class="card-title text-center mb-4">Login</h2>
+        <p>Access your University Management System account</p> <form method="POST">
             {% csrf_token %}
             
-            <div class="form-group">
-                <label for="{{ form.username.id_for_label }}">Username</label>
-                {{ form.username }}
+            <div class="form-row">
+                <label for="{{ form.username.id_for_label }}" class="form-label">Username</label>
+                <div class="form-input">
+                    {{ form.username }}
+                </div>
             </div>
 
-            <div class="form-group">
-                <label for="{{ form.password.id_for_label }}">Password</label>
-                {{ form.password }}
+            <div class="form-row">
+                <label for="{{ form.password.id_for_label }}" class="form-label">Password</label>
+                <div class="form-input">
+                    {{ form.password }}
+                </div>
             </div>
-            
+
             {% if form.errors %}
                 {% for field in form %}
                     {% for error in field.errors %}
@@ -85,7 +92,7 @@
             {% endif %}
 
             <div class="d-grid gap-2">
-                <button type="submit" class="btn btn-custom">Log in</button>
+                <button type="submit" class="btn btn-primary">Log in</button>
             </div>
         </form>
         <p class="text-center mt-3">

@@ -1,4 +1,4 @@
-{%load static%}
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -21,6 +22,7 @@
             justify-content: space-between;
             align-items: center;
             box-shadow: 0 2px 4px rgba(0,0,0,.04);
+            position: relative; /* Add this for notification dropdown */
         }
         .top-navbar .app-title {
             font-size: 1.8rem;
@@ -31,12 +33,93 @@
             display: flex;
             align-items: center;
         }
-        .top-navbar .profile-controls .notification-icon {
+        /* Notification styles */
+        .notification-icon-container {
+            position: relative;
+            margin-right: 20px;
+        }
+        .notification-icon {
             font-size: 1.5rem;
             color: #6c757d;
             cursor: pointer;
-            margin-right: 20px;
         }
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            padding: 5px 8px;
+            border-radius: 50%;
+            background-color: #dc3545;
+            color: white;
+            font-size: 0.7rem;
+            font-weight: bold;
+            display: none; /* Hide if no unread notifications */
+        }
+        .notification-dropdown {
+            display: none;
+            position: absolute;
+            top: 60px;
+            right: 20px;
+            background-color: #ffffff;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            width: 350px;
+            max-height: 400px;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        .notification-header {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .notification-header h5 {
+            margin: 0;
+            font-size: 1.1rem;
+            color: #343a40;
+        }
+        .notification-header .mark-as-read {
+            font-size: 0.9rem;
+            color: #007bff;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .notification-list .notification-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            transition: background-color 0.2s;
+        }
+        .notification-list .notification-item:hover {
+            background-color: #f8f9fa;
+        }
+        .notification-list a {
+            text-decoration: none;
+            color: inherit;
+        }
+        .notification-list .notification-message {
+            font-size: 1rem;
+            line-height: 1.4;
+            color: #212529;
+        }
+        .notification-list .notification-timestamp {
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-top: 5px;
+            display: block;
+        }
+        .notification-list .no-notifications {
+            padding: 20px;
+            text-align: center;
+            color: #6c757d;
+        }
+        .notification-item.unread {
+            background-color: #e9f5ff;
+        }
+        /* End of Notification styles */
+
         .top-navbar .profile-controls .logout-btn {
             background-color: #dc3545;
             color: white;
@@ -111,8 +194,23 @@
     <div class="top-navbar">
         <div class="app-title">UMS</div>
         <div class="profile-controls">
-            <span class="notification-icon">🔔</span>
+            <div class="notification-icon-container">
+                <span class="notification-icon" id="notification-bell">
+                    <i class="fas fa-bell"></i>
+                </span>
+                <span class="notification-badge" id="notification-badge">0</span>
+            </div>
             <a href="{% url 'logout_user' %}" class="logout-btn">Logout</a>
+            
+            <div class="notification-dropdown" id="notification-dropdown">
+                <div class="notification-header">
+                    <h5>Notifications</h5>
+                    <a href="#" class="mark-as-read" id="mark-all-read">Mark all as read</a>
+                </div>
+                <div class="notification-list" id="notification-list">
+                    <div class="no-notifications">Loading notifications...</div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -134,22 +232,22 @@
                 <div class="user-name">{{ request.user.username }}</div>
             </div>
             <ul>
-                <li><a href="{% url 'dashboard' %}">My Dashboard</a></li>
-                {% if request.user.role == 'Admin' %}
-                <li><a href="{% url 'manage_teachers' %}">Manage Teachers</a></li>
-                <li><a href="{% url 'manage_students' %}">Manage Students</a></li>
-                <li><a href="{% url 'manage_attendance_admin' %}">Manage All Student Attendance</a></li>
-                <li><a href="{% url 'manage_enrollment_admin' %}">Manage Enrollments</a></li>
-                <li><a href="{% url 'manage_courses_admin' %}">Manage Courses</a></li>
-                {% elif request.user.role == 'Teacher' %}
-                <li class="nav-item"><a class="nav-link" href="{% url 'manage_courses' %}">My Courses</a></li>
-                {% comment %} <li class="nav-item"><a class="nav-link" href="{% url 'manage_attendance' %}">My Attendance</a></li> {% endcomment %}
-                {% elif request.user.role == 'Student' %}
-                <li class="nav-item"><a class="nav-link" href="{% url 'my_courses' %}">My Courses</a></li>
-                <li class="nav-item"><a class="nav-link" href="{% url 'my_grades' %}">My Grades</a></li>
-                <li class="nav-item"><a class="nav-link" href="{% url 'my_attendance' %}">My Attendance</a></li>
-                {% endif %}
-            </ul>
+    <li><a href="{% url 'dashboard' %}"><i class="fas fa-tachometer-alt me-2"></i> My Dashboard</a></li>
+    {% if request.user.role == 'Admin' %}
+        <li><a href="{% url 'manage_teachers' %}"><i class="fas fa-chalkboard-teacher me-2"></i> Manage Teachers</a></li>
+        <li><a href="{% url 'manage_students' %}"><i class="fas fa-user-graduate me-2"></i> Manage Students</a></li>
+        <li><a href="{% url 'manage_attendance_admin' %}"><i class="fas fa-calendar-check me-2"></i> Manage All Student Attendance</a></li>
+        <li><a href="{% url 'manage_enrollment_admin' %}"><i class="fas fa-clipboard-list me-2"></i> Manage Enrollments</a></li>
+        <li><a href="{% url 'manage_courses_admin' %}"><i class="fas fa-book me-2"></i> Manage Courses</a></li>
+    {% elif request.user.role == 'Teacher' %}
+        <li><a href="{% url 'manage_courses' %}"><i class="fas fa-book-reader me-2"></i> My Courses</a></li>
+    {% elif request.user.role == 'Student' %}
+        <li><a href="{% url 'my_courses' %}"><i class="fas fa-book me-2"></i> My Courses</a></li>
+        <li><a href="{% url 'my_grades' %}"><i class="fas fa-chart-line me-2"></i> My Grades</a></li>
+        <li><a href="{% url 'my_attendance' %}"><i class="fas fa-calendar-check me-2"></i> My Attendance</a></li>
+    {% endif %}
+    <li><a href="{% url 'profile_view' %}"><i class="fas fa-user me-2"></i> My Profile</a></li>
+</ul>
         </div>
         <div class="main-content-area">
             {% block content %}
@@ -158,5 +256,104 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const notificationBell = document.getElementById('notification-bell');
+            const notificationDropdown = document.getElementById('notification-dropdown');
+            const notificationList = document.getElementById('notification-list');
+            const notificationBadge = document.getElementById('notification-badge');
+            const markAllReadBtn = document.getElementById('mark-all-read');
+
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.startsWith(name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+
+            const csrftoken = getCookie('csrftoken');
+
+            async function fetchNotifications() {
+                try {
+                    const response = await fetch('{% url "get_notifications" %}');
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    const data = await response.json();
+                    
+                    notificationList.innerHTML = '';
+
+                    if (data.notifications.length === 0) {
+                        notificationList.innerHTML = '<div class="no-notifications">No new notifications.</div>';
+                    } else {
+                        data.notifications.forEach(notification => {
+                            const notificationItem = document.createElement('a');
+                            notificationItem.href = notification.link;
+                            notificationItem.classList.add('notification-item');
+                            if (!notification.is_read) {
+                                notificationItem.classList.add('unread');
+                            }
+                            notificationItem.innerHTML = `
+                                <span class="notification-message">${notification.message}</span>
+                                <span class="notification-timestamp">${notification.timestamp_ago}</span>
+                            `;
+                            notificationList.appendChild(notificationItem);
+                        });
+                    }
+                    
+                    notificationBadge.textContent = data.unread_count;
+                    notificationBadge.style.display = data.unread_count > 0 ? 'block' : 'none';
+
+                } catch (error) {
+                    console.error('Error fetching notifications:', error);
+                    notificationList.innerHTML = '<div class="no-notifications">Failed to load notifications.</div>';
+                }
+            }
+            
+            notificationBell.addEventListener('click', function(event) {
+                event.stopPropagation();
+                if (notificationDropdown.style.display === 'block') {
+                    notificationDropdown.style.display = 'none';
+                } else {
+                    fetchNotifications();
+                    notificationDropdown.style.display = 'block';
+                }
+            });
+
+            document.addEventListener('click', function(event) {
+                if (!notificationDropdown.contains(event.target) && !notificationBell.contains(event.target)) {
+                    notificationDropdown.style.display = 'none';
+                }
+            });
+
+            markAllReadBtn.addEventListener('click', async function(event) {
+                event.preventDefault();
+                try {
+                    const response = await fetch('{% url "mark_all_notifications_as_read" %}', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': csrftoken,
+                        },
+                    });
+                    if (response.ok) {
+                        fetchNotifications();
+                    }
+                } catch (error) {
+                    console.error('Error marking all notifications as read:', error);
+                }
+            });
+            
+            // Fetch notifications on page load
+            fetchNotifications();
+        });
+    </script>
 </body>
 </html>

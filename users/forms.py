@@ -46,3 +46,30 @@ class TeacherCreationForm(BaseUserCreationForm):
     class Meta(BaseUserCreationForm.Meta):
         model = User
         fields = ('username', 'email', 'department',)
+
+class UserProfileForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'first_name', 'last_name']
+        widgets = {
+            'username': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+class StudentProfileForm(forms.ModelForm):
+    class Meta:
+        model = Student
+        fields = ['department']
+        widgets = {
+            'department': forms.Select(attrs={'class': 'form-control'}),
+        }
+
+class TeacherProfileForm(forms.ModelForm):
+    class Meta:
+        model = Teacher
+        fields = ['department']
+        widgets = {
+            'department': forms.Select(attrs={'class': 'form-control'}),
+        }

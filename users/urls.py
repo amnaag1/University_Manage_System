@@ -4,7 +4,8 @@ from . import views
 urlpatterns = [
     # Home url
     path('', views.home, name='home'),
-
+    path('about/', views.about_view, name='about'),
+    
     # Department URls
     path('departments/<pk>/', views.department_detail, name='department_detail'),
     path('departments/create', views.department_create, name='department_create'),
@@ -66,6 +67,11 @@ urlpatterns = [
     path('student/my-grades/', views.my_grades, name='my_grades'),
     path('student/my-attendance/', views.my_attendance, name='my_attendance'),
 
+    # Profile urls
+    path('profile/', views.profile_view, name='profile_view'),
 
-
+    # Notification Urls
+    path('get-notifications/', views.get_notifications, name='get_notifications'),
+    path('mark-notification-as-read/<int:notification_id>/', views.mark_notification_as_read, name='mark_notification_as_read'),
+    path('notifications/mark-all-read/', views.mark_all_notifications_as_read, name='mark_all_notifications_as_read'),
 ]

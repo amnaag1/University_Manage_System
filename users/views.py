@@ -9,12 +9,18 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib import messages
 from django.db.models import Count, Q
 from collections import defaultdict
-from .forms import StudentCreationForm, TeacherCreationForm
+from .forms import StudentCreationForm, TeacherCreationForm, UserProfileForm, StudentProfileForm, TeacherProfileForm
 import datetime  
+from django.http import JsonResponse
+from .models import Notification
+from django.utils import timezone
 
 
 def home(request):
     return render(request, 'home.html')
+
+def about_view(request):
+    return render(request, 'about.html')
 
 # Department views
 def department_list(request):
@@ -238,6 +244,15 @@ def register(request):
             elif user.role == 'Student':
                 Student.objects.create(user=user, department=Department.objects.first()) 
             
+            # Notify the admin about the new registration
+            admin_users = User.objects.filter(role='Admin')
+            for admin in admin_users:
+                Notification.objects.create(
+                    user=admin,
+                    message=f'A new {user.role} named "{user.username}" has registered.',
+                    link=f'/admin/manage-{user.role.lower()}s/'
+                )
+
             login(request, user)
             return redirect('dashboard')
     else:
@@ -470,12 +485,27 @@ def course_detail_admin(request, course_id):
                 course.teacher = new_teacher
                 course.save()
                 messages.success(request, f'Teacher for {course.course_name} updated successfully.')
+                # Create a notification for the teacher
+                Notification.objects.create(
+                    user=new_teacher.user,
+                    message=f'You have been assigned as the teacher for the course "{course.course_name}".',
+                    link=f'/teacher/manage-courses/'
+                )
             except Teacher.DoesNotExist:
                 messages.error(request, 'Selected teacher does not exist.')
         else:
-            course.teacher = None
-            course.save()
-            messages.info(request, f'Teacher for {course.course_name} has been unassigned.')
+            # Puraani teacher ko un-assign karne ka logic
+            if course.teacher:
+                old_teacher = course.teacher
+                course.teacher = None
+                course.save()
+                messages.info(request, f'Teacher for {course.course_name} has been unassigned.')
+                # Old teacher ko notify karo
+                Notification.objects.create(
+                    user=old_teacher.user,
+                    message=f'You have been unassigned from the course "{course.course_name}".',
+                    link=f'/teacher/manage-courses/'
+                )
             
         # --- NEW AND IMPROVED LOGIC FOR STUDENT ENROLLMENT ---
         selected_student_ids = set(request.POST.getlist('enroll_student'))
@@ -498,6 +528,13 @@ def course_detail_admin(request, course_id):
             if student_id:
                 student = get_object_or_404(Student, pk=student_id)
                 Enrollment.objects.create(student=student, course=course)
+                
+                # Create a notification for the newly enrolled student
+                Notification.objects.create(
+                    user=student.user,
+                    message=f'You have been enrolled in the new course "{course.course_name}".',
+                    link=f'/student/my-courses/' 
+                )
         
         # Check if any changes were made and provide appropriate feedback
         if students_to_add or students_to_remove:
@@ -506,6 +543,14 @@ def course_detail_admin(request, course_id):
             messages.info(request, f'No changes were made to student enrollments for {course.course_name}.')
 
         return redirect('course_detail_admin', course_id=course.id)
+
+    context = {
+        'course': course,
+        'enrolled_students': enrolled_students,
+        'all_students': all_students,
+        'all_teachers': all_teachers,
+    }
+    return render(request, 'admin/course_detail_admin.html', context)
 
     context = {
         'course': course,
@@ -536,6 +581,8 @@ def course_assignment_admin(request, course_id):
         'all_teachers': all_teachers
     }
     return render(request, 'admin/course_assignment.html', context)
+
+
 
 
 
@@ -598,7 +645,22 @@ def manage_grades(request, course_id):
     if request.method == 'POST':
         formset = GradeFormSet(request.POST, queryset=grades)
         if formset.is_valid():
-            formset.save()
+            # Old grades fetch karo
+            old_grades = {grade.id: grade.score for grade in grades}
+            
+            instances = formset.save(commit=False)
+            
+            for instance in instances:
+                # Check if grade has changed
+                if old_grades[instance.id] != instance.score:
+                    instance.save()
+                    # Create a notification for the student whose grade was updated
+                    Notification.objects.create(
+                        user=instance.student.user,
+                        message=f'Your grade for "{instance.course.course_name}" has been updated.',
+                        link=f'/student/my-grades/'
+                    )
+            
             messages.success(request, 'Grades updated successfully!')
             return redirect('manage_grades', course_id=course.id)
     else:
@@ -632,26 +694,34 @@ def manage_attendance(request, course_id):
     date_str = request.GET.get('date', datetime.date.today().strftime('%Y-%m-%d'))
     attendance_date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
 
-    # --- THIS IS THE KEY CHANGE ---
-    # We will handle both GET and POST logic together here for simplicity and to avoid fetching data twice.
-
     # If the request is a POST, process the form submission first.
     if request.method == 'POST':
         # Fetch the records specifically for the course and date
         attendance_records_to_update = Attendance.objects.filter(course=course, date=attendance_date)
         
+        # Puraane status ko store kar lo
+        old_status = {record.id: record.status for record in attendance_records_to_update}
+
         for record in attendance_records_to_update:
             # Get the status from the form data
             status = request.POST.get(f"status_{record.id}")
-            if status:
+            if status and old_status[record.id] != status:
                 record.status = status
                 record.save()
+                
+                # Create a notification for the student whose attendance was updated
+                Notification.objects.create(
+                    user=record.student.user,
+                    message=f'Your attendance for "{record.course.course_name}" has been marked as {status} on {attendance_date}.',
+                    link=f'/student/my-attendance/'
+                )
+
         messages.success(request, "Attendance updated successfully!")
         
         # Redirect back to the same page with the selected date
         return redirect('manage_attendance', course_id=course.id)
 
-    # --- End of POST logic ---
+    # End of POST logic 
 
     # Get all enrollments for this specific course.
     enrollments = Enrollment.objects.filter(course=course).select_related('student')
@@ -790,6 +860,97 @@ def my_attendance(request):
     }
     
     return render(request, 'student/my_attendance.html', context)
+
+@login_required
+def profile_view(request):
+    user = request.user
+    
+    if request.method == 'POST':
+        user_form = UserProfileForm(request.POST, instance=user)
+        
+        # Determine the user's role to get the correct related form
+        if user.role == 'Student':
+            student_profile = get_object_or_404(Student, user=user)
+            profile_form = StudentProfileForm(request.POST, instance=student_profile)
+        elif user.role == 'Teacher':
+            teacher_profile = get_object_or_404(Teacher, user=user)
+            profile_form = TeacherProfileForm(request.POST, instance=teacher_profile)
+        else:
+            profile_form = None # Admin doesn't have a separate profile form 
+
+        # Check if forms are valid and save them
+        if user_form.is_valid() and (profile_form is None or profile_form.is_valid()):
+            user_form.save()
+            if profile_form:
+                profile_form.save()
+            messages.success(request, 'Your profile was updated successfully!')
+            return redirect('profile_view')
+        else:
+            messages.error(request, 'Please correct the errors below.')
+
+    else:
+        user_form = UserProfileForm(instance=user)
+        if user.role == 'Student':
+            student_profile = get_object_or_404(Student, user=user)
+            profile_form = StudentProfileForm(instance=student_profile)
+        elif user.role == 'Teacher':
+            teacher_profile = get_object_or_404(Teacher, user=user)
+            profile_form = TeacherProfileForm(instance=teacher_profile)
+        else:
+            profile_form = None
+
+    context = {
+        'user_form': user_form,
+        'profile_form': profile_form,
+    }
+    return render(request, 'profile/profile.html', context)
+
+# This view will be called via JavaScript to get notifications
+@login_required
+def get_notifications(request):
+    notifications = Notification.objects.filter(user=request.user).order_by('-timestamp')[:10]
+    unread_count = notifications.filter(is_read=False).count()
+    
+    notifications_data = []
+    for notification in notifications:
+        time_ago = (timezone.now() - notification.timestamp).total_seconds()
+        
+        if time_ago < 60:
+            time_ago_str = f"{int(time_ago)} seconds ago"
+        elif time_ago < 3600:
+            time_ago_str = f"{int(time_ago / 60)} minutes ago"
+        elif time_ago < 86400:
+            time_ago_str = f"{int(time_ago / 3600)} hours ago"
+        else:
+            time_ago_str = f"{int(time_ago / 86400)} days ago"
+
+        notifications_data.append({
+            'id': notification.id,
+            'message': notification.message,
+            'link': notification.link,
+            'is_read': notification.is_read,
+            'timestamp_ago': time_ago_str,
+        })
+        
+    return JsonResponse({
+        'notifications': notifications_data,
+        'unread_count': unread_count,
+    })
+
+@login_required
+def mark_notification_as_read(request, notification_id):
+    notification = get_object_or_404(Notification, id=notification_id, user=request.user)
+    notification.is_read = True
+    notification.save()
+    return redirect(notification.link)
+
+@login_required
+def mark_all_notifications_as_read(request):
+    if request.method == 'POST':
+        Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+        return JsonResponse({'status': 'success'})
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
+
 
 
 
